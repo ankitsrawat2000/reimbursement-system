@@ -7,7 +7,9 @@ import com.example.reimbursementsystem.dto.UpdateClaimStatusRequest;
 import com.example.reimbursementsystem.entity.ClaimStatus;
 import com.example.reimbursementsystem.entity.Employee;
 import com.example.reimbursementsystem.entity.ExpenseClaim;
+import com.example.reimbursementsystem.exception.ClaimNotFoundException;
 import com.example.reimbursementsystem.exception.EmployeeNotFoundException;
+import com.example.reimbursementsystem.exception.InvalidStatusException;
 import com.example.reimbursementsystem.repository.EmployeeRepository;
 import com.example.reimbursementsystem.repository.ExpenseClaimRepository;
 import org.springframework.stereotype.Service;
@@ -67,24 +69,24 @@ public class ExpenseClaimService {
     public ExpenseClaimResponse updateClaimStatus(Long claimId, UpdateClaimStatusRequest req) {
 
         ExpenseClaim claim = claimRepo.findById(claimId)
-                .orElseThrow(() -> new RuntimeException("Claim not found: " + claimId));
+                .orElseThrow(() -> new ClaimNotFoundException(claimId));
 
         ClaimStatus newStatus;
         try {
             newStatus = ClaimStatus.valueOf(req.getStatus());
         } catch (IllegalArgumentException ex) {
-            throw new RuntimeException("Invalid status. Allowed: Approved, Rejected");
+            throw new InvalidStatusException("Invalid status. Allowed: Approved, Rejected");
         }
 
         if (newStatus == ClaimStatus.Pending) {
-            throw new RuntimeException("You cannot set status to Pending.");
+            throw new InvalidStatusException("You cannot set status to Pending.");
         }
 
         claim.setStatus(newStatus);
-
         ExpenseClaim saved = claimRepo.save(claim);
         return mapToResponse(saved);
     }
+
 
     public List<ClaimReportResponse> getClaimsReport(LocalDate start, LocalDate end) {
 
